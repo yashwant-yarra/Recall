@@ -1,10 +1,12 @@
 import logging
-from fastapi import FastAPI, Request, HTTPException
-from .config import settings
-from sqlalchemy.ext.asyncio import create_async_engine
 from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, HTTPException, Request
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from .config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
