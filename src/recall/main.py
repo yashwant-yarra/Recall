@@ -33,4 +33,12 @@ async def read_health_db(request: Request):
     except OperationalError as e:
         logger.exception("Database health check failed")
         raise HTTPException(status_code=503, detail="Database connection failed") from e
-    
+@app.get("/me")
+async def read_current_user(request: Request):
+    """
+    Endpoint to get the current user ID.
+    Raises an HTTPException if the user ID is not set in the environment.
+    """
+    if settings.dev_user_id is None:
+        raise HTTPException(status_code=500, detail="DEV_USER_ID is not set in the environment.")
+    return {"user_id": settings.dev_user_id}

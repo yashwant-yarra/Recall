@@ -5,4 +5,7 @@ class Settings(BaseSettings):
     gcs_bucket: str
     model_config = SettingsConfigDict(env_file=".env")
     db_echo: bool = False
+    dev_user_id: str | None = None
+
+
 settings = Settings()
