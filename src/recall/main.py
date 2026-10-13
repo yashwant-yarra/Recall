@@ -6,16 +6,15 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from google.cloud import storage
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.ext.asyncio import create_async_engine
 
 from . import auth, files
 from .config import settings
+from recall.db import make_engine
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    connect_args = {"prepare_threshold": None}
-    engine = create_async_engine(settings.database_url, echo=settings.db_echo, pool_pre_ping=True, connect_args=connect_args)
+    engine = make_engine()
     app.state.engine = engine
     credentials, project = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
     app.state.gcs_credentials = credentials
