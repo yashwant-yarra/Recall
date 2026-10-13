@@ -4,7 +4,7 @@ from docx import Document
 from recall.extract import extract_text
 
 def test_txt():
-    assert extract_text("Hello".encode(), "text/plain") == ["Hello"]
+    assert extract_text("héllo".encode(), "text/plain") == ["héllo"]
 def test_docx():
     doc = Document()
     doc.add_paragraph("first")
