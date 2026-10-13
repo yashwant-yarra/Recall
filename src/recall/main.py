@@ -1,16 +1,16 @@
 import logging
 from contextlib import asynccontextmanager
 
+import google.auth
 from fastapi import Depends, FastAPI, HTTPException, Request
+from google.cloud import storage
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import create_async_engine
-import google.auth
-from google.cloud import storage
 
 from . import auth
-
 from .config import settings
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -23,13 +23,16 @@ async def lifespan(app: FastAPI):
     yield
     await engine.dispose()
 
+
 app = FastAPI(lifespan=lifespan)
 
 logger = logging.getLogger(__name__)
 
+
 @app.get("/health")
 def read_health():
     return {"status": "ok"}
+
 
 @app.get("/health/db")
 async def read_health_db(request: Request):
@@ -40,10 +43,8 @@ async def read_health_db(request: Request):
     except OperationalError as e:
         logger.exception("Database health check failed")
         raise HTTPException(status_code=503, detail="Database connection failed") from e
+
+
 @app.get("/me")
 def read_current_user(user_id: str = Depends(auth.get_current_user_id)):
-    """
-    Endpoint to get the current user ID.
-    Raises an HTTPException if the user ID is not set in the environment.
-    """
     return {"user_id": user_id}
