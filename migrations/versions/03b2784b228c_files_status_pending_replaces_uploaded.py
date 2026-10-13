@@ -22,7 +22,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     op.execute("""
         ALTER TABLE files DROP CONSTRAINT files_status_check
-    """);
+    """)
     op.execute("""
         ALTER TABLE files ADD CONSTRAINT files_status_check CHECK (status IN ('pending', 'processing', 'ready', 'failed'))
     """)
@@ -37,8 +37,8 @@ def downgrade() -> None:
         ALTER TABLE files ALTER COLUMN status SET DEFAULT 'uploaded'
     """)
     op.execute("""
-            ALTER TABLE files DROP CONSTRAINT files_status_check
-        """)
+        ALTER TABLE files DROP CONSTRAINT files_status_check
+    """)
     op.execute("""
         ALTER TABLE files ADD CONSTRAINT files_status_check CHECK (status IN ('uploaded', 'processing', 'ready', 'failed'))
     """)
