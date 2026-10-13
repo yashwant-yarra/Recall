@@ -12,7 +12,10 @@ def sign_upload_url(
     if not credentials.valid:
         credentials.refresh(Request())
     # Exact-size range: GCS rejects any upload whose length differs from what the client declared.
-    headers = {"x-goog-content-length-range": f"{size_bytes},{size_bytes}"}
+    headers = {
+        "x-goog-content-length-range": f"{size_bytes},{size_bytes}",
+        "x-goog-if-generation-match": "0",
+    }
 
     url = bucket.blob(gcs_path).generate_signed_url(
         version="v4",
