@@ -1,7 +1,12 @@
-from uuid import UUID
+import asyncio
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
+from sqlalchemy import text
+
+from recall import auth
+from recall.storage import sign_upload_url
 
 from .config import settings
 
@@ -29,3 +34,27 @@ class CreateFileResponse(BaseModel):
 
 
 router = APIRouter()
+
+@router.post("/files", status_code=201) 
+async def create_file(body: CreateFileRequest, request: Request, user_id: str = Depends(auth.get_current_user_id)) -> CreateFileResponse:
+    """Creates a new file record and returns a signed upload URL."""
+    if body.mime_type not in ALLOWED_TYPES:
+        raise HTTPException(status_code=400, detail=f"Unsupported mime type: {body.mime_type}")
+    kind, ext = ALLOWED_TYPES[body.mime_type]
+    file_id = uuid4()
+    folder = "audio" if kind == "audio" else "docs"
+    gcs_path = f"users/{user_id}/{folder}/{file_id}.{ext}"
+    async with request.app.state.engine.begin() as conn:
+        await conn.execute(
+            text("INSERT INTO files (id, user_id, kind, gcs_path, mime_type, size_bytes) VALUES (:id, :user_id, :kind, :gcs_path, :mime_type, :size_bytes)"),
+            {"id": str(file_id), "user_id": user_id, "kind": kind, "gcs_path": gcs_path, "mime_type": body.mime_type, "size_bytes": body.size_bytes}
+        )
+    url, headers = await asyncio.to_thread(
+        sign_upload_url,
+        request.app.state.gcs_bucket,
+        request.app.state.gcs_credentials,
+        gcs_path,
+        body.mime_type,
+        body.size_bytes,
+    )
+    return CreateFileResponse(file_id=file_id, upload_url=url, upload_headers=headers)

@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from . import auth
+from . import auth, files
 from .config import settings
 
 
@@ -25,6 +25,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(files.router, prefix="/api/v1")
 
 logger = logging.getLogger(__name__)
 
