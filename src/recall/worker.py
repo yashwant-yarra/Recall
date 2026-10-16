@@ -11,6 +11,9 @@ from sqlalchemy import text
 from .config import settings
 from .db import make_engine
 from .extract import extract_text
+from .chunking import chunk_pages
+from .embeddings import embed, make_genai_client
+
 
 # uvicorn only configures its own loggers; without this, INFO from this module is dropped.
 logging.basicConfig(level=logging.INFO)
@@ -22,6 +25,7 @@ async def lifespan(app: FastAPI):
     app.state.engine = make_engine()
     credentials, project = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
     app.state.bucket = storage.Client(credentials=credentials, project=project).bucket(settings.gcs_bucket)
+    app.state.genai = make_genai_client()
     yield
     await app.state.engine.dispose()
 
@@ -45,7 +49,7 @@ async def handle_event(request: Request):
             text(
                 "UPDATE files SET status = 'processing' "
                 "WHERE id = :id AND status = 'pending' "
-                "RETURNING gcs_path, mime_type"
+                "RETURNING gcs_path, mime_type, user_id"
             ),
             {"id": file_id},
         )
@@ -58,19 +62,28 @@ async def handle_event(request: Request):
     try:
         data = await asyncio.to_thread(request.app.state.bucket.blob(row.gcs_path).download_as_bytes)
         pages = await asyncio.to_thread(extract_text, data, row.mime_type)
-        if not any(page.strip() for page in pages):
+        chunks = chunk_pages(pages)
+        if not chunks:
             raise ValueError("No extractable text")
-        logger.info("Extracted %s: %d pages, %d chars", file_id, len(pages), sum(len(p) for p in pages))
-        status, error = "ready", None
+        vectors = await embed(request.app.state.genai, [content for _, content in chunks])
+        async with engine.begin() as conn:  # chunks + 'ready' commit together or not at all
+            await conn.execute(
+                text("INSERT INTO chunks (file_id, user_id, chunk_no, page, content, embedding) "
+                     "VALUES (:file_id, :user_id, :chunk_no, :page, :content, CAST(:embedding AS halfvec))"),
+                [{"file_id": file_id, "user_id": row.user_id, "chunk_no": i, "page": page,
+                  "content": content, "embedding": str(vec)}
+                 for i, ((page, content), vec) in enumerate(zip(chunks, vectors))],
+            )
+            await conn.execute(text("UPDATE files SET status = 'ready', error = NULL WHERE id = :id"),
+                               {"id": file_id})
+        logger.info("Indexed %s: %d pages, %d chunks", file_id, len(pages), len(chunks))
+        status = "ready"
     except Exception as e:
         logger.exception("Processing failed for %s", file_id)
-        status, error = "failed", str(e)
-
-    async with engine.begin() as conn:
-        await conn.execute(
-            text("UPDATE files SET status = :status, error = :error WHERE id = :id"),
-            {"status": status, "error": error, "id": file_id},
-        )
+        async with engine.begin() as conn:
+            await conn.execute(text("UPDATE files SET status = 'failed', error = :error WHERE id = :id"),
+                               {"error": str(e), "id": file_id})
+        status = "failed"
     return {"status": status}
 
 
