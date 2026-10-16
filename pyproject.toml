@@ -11,6 +11,7 @@ dependencies = [
     "alembic>=1.20.0",
     "fastapi>=0.143.0",
     "google-cloud-storage>=3.17.0",
+    "google-genai>=2.31.0",
     "psycopg[binary]>=3.3.6",
     "pydantic>=2.14.0",
     "pydantic-settings>=2.15.0",

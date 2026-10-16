@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     dev_user_id: str | None = None
     max_upload_size: int = 25 * 1024 * 1024  # 25 MB
     upload_url_ttl_seconds: int = 15 * 60  # 15 minutes
+    google_cloud_project: str
+    vertex_location: str = "asia-southeast1"
+    embed_model: str = "gemini-embedding-001"
+    embed_dims: int = 768
 
 
 settings = Settings()
