@@ -1,0 +1,5 @@
+{"id": 1, "type": "keyword", "question": "What is the handbook's document ID?", "pages": [1], "expect": "AV-RLY-001"}
+{"id": 2, "type": "paraphrase", "question": "On the cheapest plan, can text inside scanned image pages become searchable?", "pages": [2], "expect": "Unavailable"}
+{"id": 3, "type": "historical", "question": "What was the largest file a Team workspace could upload on 2026-08-15?", "pages": [2, 4], "expect": "40 MB"}
+{"id": 4, "type": "unanswerable", "question": "How long does it take to move an Enterprise workspace to a different region?", "pages": [3], "expect": null}
+{"id": 5, "type": "keyword", "question": "What is another name for AsterVale Relay?", "pages": [1], "expect": "Relay Cloud"}
