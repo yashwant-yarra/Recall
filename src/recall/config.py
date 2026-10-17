@@ -9,9 +9,10 @@ class Settings(BaseSettings):
     max_upload_size: int = 25 * 1024 * 1024  # 25 MB
     upload_url_ttl_seconds: int = 15 * 60  # 15 minutes
     google_cloud_project: str
-    vertex_location: str = "asia-southeast1"
+    vertex_location: str = "global"
     embed_model: str = "gemini-embedding-001"
     embed_dims: int = 768
+    answer_model: str = "gemini-3.5-flash-lite"
 
 
 settings = Settings()

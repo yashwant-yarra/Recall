@@ -34,11 +34,15 @@ LIMIT :k
 
 router = APIRouter()
 
+async def hybrid_search(app, user_id: str, q: str) -> list[dict]:
+    [qvec] = await embed(app.state.genai, [q], task_type="RETRIEVAL_QUERY")
+    async with app.state.engine.connect() as conn:
+        result = await conn.execute(HYBRID_SQL, {"uid": user_id, "q": q, "qvec": str(qvec),
+                                                 "n": CANDIDATES, "k": SEARCH_K})
+        return [dict(r) for r in result.mappings()]
+
+
 @router.get("/search")
 async def search(request: Request, q: str = Query(min_length=1, max_length=500),
                  user_id: str = Depends(auth.get_current_user_id)):
-    [qvec] = await embed(request.app.state.genai, [q], task_type="RETRIEVAL_QUERY")
-    async with request.app.state.engine.connect() as conn:
-        result = await conn.execute(HYBRID_SQL, {"uid": user_id, "q": q, "qvec": str(qvec),
-                                                 "n": CANDIDATES, "k": SEARCH_K})
-        return {"results": [dict(r) for r in result.mappings()]}
+    return {"results": await hybrid_search(request.app, user_id, q)}
