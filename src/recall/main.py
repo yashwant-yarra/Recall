@@ -7,10 +7,10 @@ from google.cloud import storage
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 
-from . import auth, files
 from .config import settings
 from recall.db import make_engine
-
+from . import auth, files, search
+from .embeddings import make_genai_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,12 +19,14 @@ async def lifespan(app: FastAPI):
     credentials, project = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
     app.state.gcs_credentials = credentials
     app.state.gcs_bucket = storage.Client(credentials=credentials, project=project).bucket(settings.gcs_bucket)
+    app.state.genai = make_genai_client()
     yield
     await engine.dispose()
 
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(files.router, prefix="/api/v1")
+app.include_router(search.router, prefix="/api/v1")
 
 logger = logging.getLogger(__name__)
 
