@@ -19,7 +19,7 @@ WITH vec AS (
 fts AS (
     SELECT id, row_number() OVER (ORDER BY rank DESC) AS r FROM (
         SELECT id, ts_rank_cd(tsv, q) AS rank
-        FROM chunks, websearch_to_tsquery('english', :q) AS q
+        FROM chunks, to_tsquery('english', replace(plainto_tsquery('english', :q)::text, ' & ', ' | ')) AS q
         WHERE user_id = :uid AND tsv @@ q
         ORDER BY rank DESC LIMIT :n
     ) s
