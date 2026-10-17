@@ -3,3 +3,18 @@
 {"id": 3, "type": "historical", "question": "What was the largest file a Team workspace could upload on 2026-08-15?", "pages": [2, 4], "expect": "40 MB"}
 {"id": 4, "type": "unanswerable", "question": "How long does it take to move an Enterprise workspace to a different region?", "pages": [3], "expect": null}
 {"id": 5, "type": "keyword", "question": "What is another name for AsterVale Relay?", "pages": [1], "expect": "Relay Cloud"}
+{"id": 6, "type": "keyword", "question": "Which region code experienced export-job disruption during INC-2026-0916?", "pages": [4], "expect": "EU"}
+{"id": 7, "type": "keyword", "question": "Who is the named service owner responsible for escalation for workspace W-315?", "pages": [3], "expect": "Inez Cole"}
+{"id": 8, "type": "keyword", "question": "What is the monthly price of an editor pack for a Basic workspace?", "pages": [2], "expect": "not offer"}
+{"id": 9, "type": "paraphrase", "question": "A customer on the highest subscription tier reports on Sunday that nobody in the workspace can use any core service. How quickly should a human first respond?", "pages": [2], "expect": "15"}
+{"id": 10, "type": "paraphrase", "question": "A workspace is nearly out of storage. Will archiving a project, while retaining its documents, free space for new uploads?", "pages": [2], "expect": "not"}
+{"id": 11, "type": "paraphrase", "question": "An Enterprise administrator deletes the entire workspace and asks to recover it the next day using the deleted-project recovery policy. Does that recovery entitlement apply?", "pages": [3], "expect": "no customer restore"}
+{"id": 12, "type": "historical", "question": "A trial started on 2026-09-30 and is still running when the October trial policy takes effect. What total duration does that trial retain?", "pages": [4], "expect": "7"}
+{"id": 13, "type": "historical", "question": "An audit performed in October reviews a Team upload attempted on 2026-08-31. What maximum individual file size applied when that upload was attempted?", "pages": [2, 4], "expect": "40 MB"}
+{"id": 14, "type": "historical", "question": "A Team customer uploads a file on 2026-09-01, the first day of the revised size policy. What maximum file size applies on that date?", "pages": [2, 4], "expect": "100 MB"}
+{"id": 15, "type": "computed", "question": "At the register snapshot, what is Orion W-104's total storage capacity, including its purchased storage packs?", "pages": [3], "expect": "300 GB"}
+{"id": 16, "type": "computed", "question": "At the register snapshot, what is Orion W-104's total monthly recurring charge before tax, including all its existing add-ons?", "pages": [3], "expect": "169"}
+{"id": 17, "type": "computed", "question": "At the register snapshot, how many additional editors can Orion W-104 accommodate without purchasing another editor pack?", "pages": [3], "expect": "3"}
+{"id": 18, "type": "disambiguation", "question": "Which region code is the project named Orion in?", "pages": [3], "expect": "NA"}
+{"id": 19, "type": "unanswerable", "question": "What was the price of a Relay Desk license immediately before the application was retired?", "pages": [1], "expect": null}
+{"id": 20, "type": "unanswerable", "question": "What indexing-time target applies to OCR jobs on Enterprise?", "pages": [2], "expect": null}

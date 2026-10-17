@@ -1,5 +1,6 @@
 """Run eval/questions.jsonl against a running API; print retrieval rank and answer checks."""
 import json
+import re
 import sys
 import urllib.parse
 import urllib.request
@@ -37,7 +38,9 @@ for q in questions:
     rank = next((i for i, p in enumerate(pages, 1) if p in q["pages"]), None)
     answer = ask(q["question"])
     text = answer.lower().replace("\u2019", "'")  # curly apostrophe -> straight
-    passed = any(a in text for a in ABSTAIN) if q["expect"] is None else q["expect"].lower() in text
+    text = re.sub(r"\[[\d,\s]+\]", "", text)  # drop [n] / [1, 2] citations before matching
+    passed = (any(a in text for a in ABSTAIN) if q["expect"] is None
+              else re.search(rf"\b{re.escape(q['expect'].lower())}\b", text) is not None)
     t = q["type"]
     stats[t, "n"] += 1
     stats[t, "hit@1"] += rank == 1
