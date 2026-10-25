@@ -5,6 +5,7 @@ from uuid import UUID
 
 import google.auth
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from google.cloud import storage
 from sqlalchemy import text
 
@@ -43,20 +44,32 @@ async def handle_event(request: Request):
         return {"status": "ignored"}
 
     engine = request.app.state.engine
-    # Atomic claim: only one delivery of a (possibly duplicated) event gets the row.
+    # Atomic claim: only one delivery of a (possibly duplicated) event gets the row. A file left
+    # 'processing' past the lease was abandoned by a crashed worker, so it can be claimed again.
     async with engine.begin() as conn:
         result = await conn.execute(
             text(
-                "UPDATE files SET status = 'processing' "
-                "WHERE id = :id AND status = 'pending' "
-                "RETURNING gcs_path, mime_type, user_id"
+                "UPDATE files SET status = 'processing', claimed_at = now(), attempts = attempts + 1 "
+                "WHERE id = :id AND (status = 'pending' OR (status = 'processing' "
+                "AND claimed_at < now() - make_interval(secs => :lease))) "
+                "RETURNING gcs_path, mime_type, user_id, attempts"
             ),
-            {"id": file_id},
+            {"id": file_id, "lease": settings.claim_lease_seconds},
         )
         row = result.first()
+        if row is None:
+            current = (await conn.execute(text("SELECT status FROM files WHERE id = :id"),
+                                          {"id": file_id})).scalar()
+        elif row.attempts > settings.max_claim_attempts:
+            await conn.execute(text("UPDATE files SET status = 'failed', error = :error WHERE id = :id"),
+                               {"error": f"Gave up after {settings.max_claim_attempts} attempts", "id": file_id})
     if row is None:
-        logger.info("Skipping %s: not pending", file_id)
-        return {"status": "skipped"}
+        code, body = unclaimed_response(current)
+        logger.info("Not claiming %s (status %s): %d %s", file_id, current, code, body["status"])
+        return JSONResponse(body, status_code=code)
+    if row.attempts > settings.max_claim_attempts:
+        logger.warning("Giving up on %s after %d attempts", file_id, settings.max_claim_attempts)
+        return {"status": "failed"}
 
     # Any failure must land in 'failed', or the row stays stuck in 'processing'.
     try:
@@ -85,6 +98,18 @@ async def handle_event(request: Request):
                                {"error": str(e), "id": file_id})
         status = "failed"
     return {"status": status}
+
+
+def unclaimed_response(status: str | None) -> tuple[int, dict]:
+    """HTTP reply for an event whose file could not be claimed.
+
+    Eventarc treats 2xx as handled and never redelivers, so a file still 'processing' under a
+    live lease gets a non-2xx: Eventarc retries with backoff, and a later retry reclaims the
+    file if its claim expires (the worker crashed). Finished or unknown files are acknowledged.
+    """
+    if status == "processing":
+        return 409, {"status": "in_progress"}
+    return 200, {"status": "skipped"}
 
 
 def file_id_from_object_name(name: str) -> UUID | None:
